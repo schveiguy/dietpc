@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/dietpc
+dietpc.so
+dietpc.dylib
+dietpc.dll
+dietpc.a
+dietpc.lib
+dietpc-test-*
+*.exe
+*.o
+*.obj
+*.lst
+.*.swp
