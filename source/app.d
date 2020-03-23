@@ -31,8 +31,42 @@ string hashFilename(string name, InputFile[] files)
     return format("%s_cached_%s.d", name, hash);
 }
 
-void main(string[] args)
+int main(string[] args)
 {
+    import std.getopt;
+
+    bool doLive = false;
+    bool doClear = false;
+    bool compile = false;
+    auto helpInformation = getopt(
+        args,
+        "live", "Use live mode for code generation instead of normal mode", &doLive,
+        "clean", "Clear all existing cached files. Does not create any new files", &doClear
+        );
+
+    if(helpInformation.helpWanted)
+    {
+        defaultGetoptPrinter("Pre compile Diet templates for cached use",
+            helpInformation.options);
+        return 1;
+    }
+
+    // clear any cached files if requested
+    if(doClear)
+    {
+        writeln("Cleaning existing cache files");
+        DirEntry prev;
+        // need to iterate the files BEFORE removing, otherwise we get exceptions.
+        auto filesToClear = dirEntries("views", "*_cached_*.d", SpanMode.breadth);
+        while(!filesToClear.empty)
+        {
+            auto entry = filesToClear.front;
+            filesToClear.popFront;
+            remove(entry.name);
+        }
+        return 0;
+    }
+
     // for each item in the "views" directory, pre-compute a diet cached
     // version of the generated code.
     foreach(de; dirEntries("views", "*.dt", SpanMode.breadth))
@@ -68,14 +102,7 @@ void main(string[] args)
 
                     // TODO: figure out a way to output this via ranges instead
                     // of producing the entire code output at once.
-                    version(DietUseLive)
-                    {
-                        auto code = getHTMLLiveMixin(doc);
-                    }
-                    else
-                    {
-                        auto code = getHTMLMixin(doc);
-                    }
+                    auto code = doLive ? getHTMLLiveMixin(doc) : getHTMLMixin(doc);
 
                     file.rawWrite(code);
                     writeln("Completed");
@@ -85,8 +112,10 @@ void main(string[] args)
             {
                 writeln("FAILED!");
                 // log that the particular file cannot be processed
-                writefln("skipping file %s, pre-caching gives exception: %s", de.name, e.msg);
+                writefln("skipping file %s, pre-caching gives exception: %s(%s): %s", de.name, e.file, e.line, e.msg);
             }
         }
     }
+
+    return 0;
 }
