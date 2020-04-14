@@ -34,10 +34,11 @@ string hashFilename(string name, InputFile[] files)
 int main(string[] args)
 {
     import std.getopt;
+    import std.algorithm : splitter, canFind;
+    import std.string : startsWith;
 
     bool doLive = false;
     bool doClear = false;
-    bool compile = false;
     auto helpInformation = getopt(
         args,
         "live", "Use live mode for code generation instead of normal mode", &doLive,
@@ -71,7 +72,8 @@ int main(string[] args)
     // version of the generated code.
     foreach(de; dirEntries("views", "*.dt", SpanMode.breadth))
     {
-        if(de.isFile)
+        // skip any hidden directories
+        if(de.isFile && !de.name.splitter('/').canFind!(n => n.startsWith('.')))
         {
             // remove the "views/" prefix
             auto dietName = de.name["views/".length .. $];
